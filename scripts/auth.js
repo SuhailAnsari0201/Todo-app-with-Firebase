@@ -1,13 +1,19 @@
 // Listen for auth status change
 auth.onAuthStateChanged((user) => {
+  console.log("user>>", user);
+  console.log("create time uid", auth.currentUser?.uid);
+
   if (user) {
-    db.collection("guides").onSnapshot(
-      (snapshot) => {
-        setupGides(snapshot.docs);
-        setupUI(user);
-      },
-      (error) => console.log(error.message)
-    );
+    db.collection("users")
+      .doc(user.uid)
+      .collection("guides")
+      .onSnapshot(
+        (snapshot) => {
+          setupGides(snapshot.docs);
+          setupUI(user);
+        },
+        (error) => console.log(error.message)
+      );
   } else {
     console.log("User Logged out");
     setupGides([]);
@@ -19,18 +25,23 @@ auth.onAuthStateChanged((user) => {
 const createForm = document.querySelector("#create-form");
 createForm.addEventListener("submit", (e) => {
   e.preventDefault();
-
-  db.collection("guides")
-    .add({
-      title: createForm["title"].value,
-      content: createForm["content"].value,
-    })
-    .then(() => {
-      const modal = document.querySelector("#modal-create");
-      M.Modal.getInstance(modal).close();
-      createForm.reset();
-    })
-    .catch((error) => alert(error.message));
+  if (auth.currentUser?.uid) {
+    db.collection("users")
+      .doc(auth.currentUser?.uid)
+      .collection("guides")
+      .add({
+        title: createForm["title"].value,
+        content: createForm["content"].value,
+      })
+      .then(() => {
+        const modal = document.querySelector("#modal-create");
+        M.Modal.getInstance(modal).close();
+        createForm.reset();
+      })
+      .catch((error) => alert(error.message));
+  } else {
+    console.log("invalid operation");
+  }
 });
 
 // Signup
